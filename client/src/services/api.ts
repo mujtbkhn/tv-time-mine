@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Automatically handle missing '/api' in VITE_API_URL, or use relative '/api' in production
+let API_URL = import.meta.env.VITE_API_URL;
+if (API_URL) {
+  // Ensure it doesn't end with slash, then append /api if missing
+  API_URL = API_URL.replace(/\/$/, '');
+  if (!API_URL.endsWith('/api')) {
+    API_URL += '/api';
+  }
+} else {
+  API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5000/api';
+}
 
 const api = axios.create({
   baseURL: API_URL,
