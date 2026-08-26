@@ -16,5 +16,19 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // If unauthorized, clear local storage to force user to log in again
+      localStorage.removeItem('tvTimeUser');
+      // We can also redirect to login page by changing window location
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

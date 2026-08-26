@@ -7,6 +7,7 @@ const ListItemSchema = new mongoose.Schema({
   listType: { type: String, required: true }, // 'my_movies', 'my_shows', 'favourites', or a custom string like 'Watchlist'
   title: { type: String, required: true }, // Cache title for quick rendering
   posterPath: { type: String }, // Cache poster path
+  releaseDate: { type: String }, // Cache release date for sorting
 }, { timestamps: true });
 
 export default mongoose.model('ListItem', ListItemSchema);

@@ -86,6 +86,15 @@ const MyLists = () => {
 
   if (loading && items.length === 0) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
 
+  const sortedItems = [...items];
+  if (listType === 'my_movies' || listType === 'my_shows') {
+    sortedItems.sort((a, b) => {
+      const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
+      const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
+      return dateB - dateA; // Newest first
+    });
+  }
+
   return (
     <div className="container" style={{ paddingTop: '100px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px' }}>
@@ -124,7 +133,7 @@ const MyLists = () => {
             </div>
           ) : (
             <div className="grid-cards" style={{ paddingBottom: '50px' }}>
-              {items.map(item => (
+              {sortedItems.map(item => (
                 <div 
                   key={item._id} 
                   className="movie-card"
@@ -172,7 +181,10 @@ const MyLists = () => {
                     </div>
                     <div>
                       <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>{item.title}</h4>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{item.mediaType === 'movie' ? 'Movie' : 'TV Show'}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        {item.mediaType === 'movie' ? 'Movie' : 'TV Show'}
+                        {item.releaseDate && ` • ${item.releaseDate.split('-')[0]}`}
+                      </span>
                     </div>
                   </div>
                 </div>

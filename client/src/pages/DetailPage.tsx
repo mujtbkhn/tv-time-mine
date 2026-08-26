@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchDetails, getImageUrl } from '../services/tmdb';
 import HorizontalScroll from '../components/HorizontalScroll';
@@ -45,7 +45,8 @@ const DetailPage = () => {
         mediaType,
         listType,
         title: data.title || data.name,
-        posterPath: data.poster_path
+        posterPath: data.poster_path,
+        releaseDate: data.release_date || data.first_air_date
       });
       toast.success(`Added to ${listType.replace('_', ' ')}!`);
       if (listType === 'favourites') setIsLiked(true);

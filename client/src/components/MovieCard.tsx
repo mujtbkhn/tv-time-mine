@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Heart, Plus, Check } from 'lucide-react';
+import { Heart, Plus } from 'lucide-react';
 import { getImageUrl } from '../services/tmdb';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -36,7 +36,8 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, mediaType }) => {
         mediaType: type,
         listType,
         title,
-        posterPath: item.poster_path
+        posterPath: item.poster_path,
+        releaseDate: item.release_date || item.first_air_date
       });
       toast.success(`Added to ${listType.replace('_', ' ')}!`);
       if (listType === 'favourites') setIsLiked(true);

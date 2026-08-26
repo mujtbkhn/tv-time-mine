@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchTrending, fetchPopular, fetchTopRated, getImageUrl } from '../services/tmdb';
 import HorizontalScroll from '../components/HorizontalScroll';
 import { Play, Info } from 'lucide-react';

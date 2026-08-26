@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Menu, X, User } from 'lucide-react';
+import { Search, Menu, X } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import useDebounce from '../hooks/useDebounce';
 import { searchMedia, getImageUrl } from '../services/tmdb';
@@ -10,14 +10,13 @@ const Navbar = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
   const debouncedSearch = useDebounce(searchTerm, 500);
   const navigate = useNavigate();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
+  const handleScroll = () => {
       setIsMobileMenuOpen(false); // Close menu on scroll
       setIsScrolled(window.scrollY > 50);
     };

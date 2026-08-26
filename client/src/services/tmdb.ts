@@ -39,7 +39,7 @@ export const searchMedia = async (query: string) => {
   return data.results;
 };
 
-export const fetchDetails = async (mediaType: 'movie' | 'tv', id: string) => {
+export const fetchDetails = async (mediaType: 'movie' | 'tv' | 'person', id: string) => {
   const response = await fetch(`${BASE_URL}/${mediaType}/${id}?append_to_response=credits,images,similar`, OPTIONS);
   const data = await response.json();
   return data;
