@@ -36,16 +36,17 @@ const MyLists = () => {
         setLoading(true);
         if (listType === 'custom') {
           const { data: names } = await api.get('/lists/custom/names');
-          setCustomLists(names);
-          if (names.length > 0) {
-            setActiveCustomList(names[0]);
+          const validNames = Array.isArray(names) ? names : [];
+          setCustomLists(validNames);
+          if (validNames.length > 0) {
+            setActiveCustomList(validNames[0]);
           } else {
             setItems([]);
             setLoading(false);
           }
         } else {
           const { data } = await api.get(`/lists/${listType}`);
-          setItems(data);
+          setItems(Array.isArray(data) ? data : []);
         }
       } catch (error) {
         console.error("Failed to fetch lists", error);
@@ -63,7 +64,7 @@ const MyLists = () => {
         try {
           setLoading(true);
           const { data } = await api.get(`/lists/${activeCustomList}`);
-          setItems(data);
+          setItems(Array.isArray(data) ? data : []);
         } catch (error) {
           console.error("Failed to fetch custom list items", error);
         } finally {
@@ -93,24 +94,26 @@ const MyLists = () => {
     return type;
   };
 
-  if (loading && items.length === 0) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
-
   const availableGenres = useMemo(() => {
     const ids = new Set<number>();
-    items.forEach(item => {
-      if (item.genreIds) {
-        item.genreIds.forEach((id: number) => ids.add(id));
-      }
-    });
+    if (Array.isArray(items)) {
+      items.forEach(item => {
+        if (item.genreIds && Array.isArray(item.genreIds)) {
+          item.genreIds.forEach((id: number) => ids.add(id));
+        }
+      });
+    }
     return Array.from(ids)
       .map(id => ({ id, name: genreMap[id] || 'Unknown' }))
       .filter(g => g.name !== 'Unknown')
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [items, genreMap]);
 
-  const filteredItems = selectedGenre 
-    ? items.filter(item => item.genreIds?.includes(selectedGenre)) 
-    : items;
+  if (loading && items.length === 0) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+
+  const filteredItems = selectedGenre && Array.isArray(items)
+    ? items.filter(item => item.genreIds && Array.isArray(item.genreIds) && item.genreIds.includes(selectedGenre)) 
+    : (Array.isArray(items) ? items : []);
 
   const sortedItems = [...filteredItems];
   if (listType === 'my_movies' || listType === 'my_shows' || listType === 'watched') {
