@@ -8,6 +8,7 @@ const ListItemSchema = new mongoose.Schema({
   title: { type: String, required: true }, // Cache title for quick rendering
   posterPath: { type: String }, // Cache poster path
   releaseDate: { type: String }, // Cache release date for sorting
+  genreIds: [{ type: Number }], // Cache genres for filtering
 }, { timestamps: true });
 
 export default mongoose.model('ListItem', ListItemSchema);
