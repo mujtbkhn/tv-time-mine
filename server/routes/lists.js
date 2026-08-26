@@ -9,7 +9,7 @@ router.get('/:listType', protect, async (req, res) => {
   try {
     const items = await ListItem.find({ user: req.user._id, listType: req.params.listType });
     res.json(items);
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
@@ -21,7 +21,7 @@ router.get('/custom/names', protect, async (req, res) => {
     const standardLists = ['my_movies', 'my_shows', 'favourites'];
     const customNames = [...new Set(items.map(item => item.listType).filter(type => !standardLists.includes(type)))];
     res.json(customNames);
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
@@ -50,7 +50,7 @@ router.post('/add', protect, async (req, res) => {
       releaseDate
     });
     res.status(201).json(newItem);
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
@@ -70,7 +70,7 @@ router.delete('/remove/:id', protect, async (req, res) => {
 
     await item.deleteOne();
     res.json({ message: 'Item removed' });
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });

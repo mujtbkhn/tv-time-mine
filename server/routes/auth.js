@@ -1,11 +1,10 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
 import User from '../models/User.js';
 
 const router = express.Router();
 
-const generateToken = (id: string | mongoose.Types.ObjectId) => {
+const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
     expiresIn: '30d',
   });
@@ -29,7 +28,7 @@ router.post('/register', async (req, res) => {
     } else {
       res.status(400).json({ message: 'Invalid user data' });
     }
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
@@ -48,20 +47,18 @@ router.post('/login', async (req, res) => {
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
     }
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-import type { Request, Response, NextFunction } from 'express';
-
-// Middleware for protected routes (should ideally be in a separate file, placing here for simplicity in single route file for auth info)
-export const protect = async (req: Request, res: Response, next: NextFunction) => {
+// Middleware for protected routes
+export const protect = async (req, res, next) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as jwt.JwtPayload;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
       req.user = await User.findById(decoded.id).select('-password');
       
       if (!req.user) {
@@ -69,7 +66,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
       }
       
       return next();
-    } catch (error: any) {
+    } catch (error) {
       return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
