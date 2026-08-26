@@ -14,7 +14,6 @@ interface MovieCardProps {
 const MovieCard: React.FC<MovieCardProps> = ({ item, mediaType }) => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const [showMenu, setShowMenu] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   
   const type = item.media_type || mediaType || 'movie';
@@ -37,11 +36,11 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, mediaType }) => {
         listType,
         title,
         posterPath: item.poster_path,
-        releaseDate: item.release_date || item.first_air_date
+        releaseDate: item.release_date || item.first_air_date,
+        genreIds: item.genre_ids || []
       });
       toast.success(`Added to ${listType.replace('_', ' ')}!`);
       if (listType === 'favourites') setIsLiked(true);
-      setShowMenu(false);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error adding to list');
     }
@@ -68,7 +67,6 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, mediaType }) => {
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)';
         (e.currentTarget as HTMLDivElement).style.zIndex = '1';
-        setShowMenu(false);
       }}
     >
       <img 
@@ -109,44 +107,14 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, mediaType }) => {
             <Heart size={18} fill={isLiked ? 'var(--primary-color)' : 'none'} />
           </button>
           
-          <div style={{ position: 'relative' }}>
-            <button 
-              className="icon-btn glass" 
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMenu(!showMenu);
-              }}
-              style={iconBtnStyle}
-              title="Add to List"
-            >
-              <Plus size={18} />
-            </button>
-            
-            {showMenu && (
-              <div 
-                className="list-menu glass" 
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '5px',
-                  background: 'var(--surface-color)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '5px',
-                  minWidth: '120px',
-                  zIndex: 20
-                }}
-              >
-                {type === 'movie' && (
-                  <div className="menu-item" onClick={(e) => handleAddToList(e, 'my_movies')} style={menuItemStyle}>My Movies</div>
-                )}
-                {type === 'tv' && (
-                  <div className="menu-item" onClick={(e) => handleAddToList(e, 'my_shows')} style={menuItemStyle}>My Shows</div>
-                )}
-                <div className="menu-item" onClick={(e) => handleAddToList(e, 'favourites')} style={menuItemStyle}>Favourites</div>
-              </div>
-            )}
-          </div>
+          <button 
+            className="icon-btn glass" 
+            onClick={(e) => handleAddToList(e, type === 'movie' ? 'my_movies' : 'my_shows')}
+            style={iconBtnStyle}
+            title={type === 'movie' ? 'Add to Movies' : 'Add to Shows'}
+          >
+            <Plus size={18} />
+          </button>
         </div>
         
         <div>
@@ -172,14 +140,6 @@ const iconBtnStyle = {
   color: 'white',
   cursor: 'pointer',
   transition: 'background 0.2s',
-};
-
-const menuItemStyle = {
-  padding: '8px 10px',
-  fontSize: '0.85rem',
-  cursor: 'pointer',
-  transition: 'background 0.2s',
-  borderRadius: 'var(--radius-sm)',
 };
 
 export default MovieCard;

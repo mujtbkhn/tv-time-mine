@@ -13,7 +13,6 @@ const DetailPage = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [showMenu, setShowMenu] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
@@ -46,11 +45,11 @@ const DetailPage = () => {
         listType,
         title: data.title || data.name,
         posterPath: data.poster_path,
-        releaseDate: data.release_date || data.first_air_date
+        releaseDate: data.release_date || data.first_air_date,
+        genreIds: data.genres ? data.genres.map((g: any) => g.id) : []
       });
       toast.success(`Added to ${listType.replace('_', ' ')}!`);
       if (listType === 'favourites') setIsLiked(true);
-      setShowMenu(false);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error adding to list');
     }
@@ -162,24 +161,22 @@ const DetailPage = () => {
                 {isLiked ? 'Favorited' : 'Favorite'}
               </button>
               
-              <div style={{ position: 'relative' }}>
+              {mediaType === 'movie' && (
                 <button 
                   className="btn btn-glass"
-                  onClick={() => setShowMenu(!showMenu)}
+                  onClick={() => handleAddToList('my_movies')}
                 >
-                  <Plus size={20} /> Add to List
+                  <Plus size={20} /> Add to Movies
                 </button>
-                {showMenu && (
-                  <div className="glass" style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', borderRadius: 'var(--radius-sm)', padding: '5px', minWidth: '150px', zIndex: 20 }}>
-                    {mediaType === 'movie' && (
-                      <div style={menuItemStyle} onClick={() => handleAddToList('my_movies')}>My Movies</div>
-                    )}
-                    {mediaType === 'tv' && (
-                      <div style={menuItemStyle} onClick={() => handleAddToList('my_shows')}>My Shows</div>
-                    )}
-                  </div>
-                )}
-              </div>
+              )}
+              {mediaType === 'tv' && (
+                <button 
+                  className="btn btn-glass"
+                  onClick={() => handleAddToList('my_shows')}
+                >
+                  <Plus size={20} /> Add to Shows
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -273,14 +270,6 @@ const DetailPage = () => {
       )}
     </div>
   );
-};
-
-const menuItemStyle = {
-  padding: '8px 10px',
-  fontSize: '0.9rem',
-  cursor: 'pointer',
-  transition: 'background 0.2s',
-  borderRadius: 'var(--radius-sm)',
 };
 
 export default DetailPage;

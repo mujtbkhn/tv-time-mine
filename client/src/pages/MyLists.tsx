@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import { getImageUrl } from '../services/tmdb';
-import { Trash2 } from 'lucide-react';
+import { getImageUrl, fetchGenres } from '../services/tmdb';
+import { Trash2, Filter } from 'lucide-react';
 
 const MyLists = () => {
   const { listType } = useParams<{ listType: string }>();
@@ -13,6 +13,17 @@ const MyLists = () => {
   const [loading, setLoading] = useState(true);
   const [customLists, setCustomLists] = useState<string[]>([]);
   const [activeCustomList, setActiveCustomList] = useState<string>('');
+  
+  const [genreMap, setGenreMap] = useState<Record<number, string>>({});
+  const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchGenres().then(map => setGenreMap(map));
+  }, []);
+
+  useEffect(() => {
+    setSelectedGenre(null);
+  }, [listType, activeCustomList]);
 
   useEffect(() => {
     if (!user) {
@@ -24,7 +35,6 @@ const MyLists = () => {
       try {
         setLoading(true);
         if (listType === 'custom') {
-          // Fetch custom list names
           const { data: names } = await api.get('/lists/custom/names');
           setCustomLists(names);
           if (names.length > 0) {
@@ -34,7 +44,6 @@ const MyLists = () => {
             setLoading(false);
           }
         } else {
-          // Fetch standard list
           const { data } = await api.get(`/lists/${listType}`);
           setItems(data);
         }
@@ -48,7 +57,6 @@ const MyLists = () => {
     fetchLists();
   }, [listType, user, navigate]);
 
-  // Fetch items for specific custom list when activeCustomList changes
   useEffect(() => {
     if (listType === 'custom' && activeCustomList) {
       const fetchCustomListItems = async () => {
@@ -81,17 +89,35 @@ const MyLists = () => {
     if (type === 'my_movies') return 'My Movies';
     if (type === 'my_shows') return 'My Shows';
     if (type === 'favourites') return 'Favourites';
+    if (type === 'watched') return 'Watched';
     return type;
   };
 
   if (loading && items.length === 0) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
 
-  const sortedItems = [...items];
-  if (listType === 'my_movies' || listType === 'my_shows') {
+  const availableGenres = useMemo(() => {
+    const ids = new Set<number>();
+    items.forEach(item => {
+      if (item.genreIds) {
+        item.genreIds.forEach((id: number) => ids.add(id));
+      }
+    });
+    return Array.from(ids)
+      .map(id => ({ id, name: genreMap[id] || 'Unknown' }))
+      .filter(g => g.name !== 'Unknown')
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [items, genreMap]);
+
+  const filteredItems = selectedGenre 
+    ? items.filter(item => item.genreIds?.includes(selectedGenre)) 
+    : items;
+
+  const sortedItems = [...filteredItems];
+  if (listType === 'my_movies' || listType === 'my_shows' || listType === 'watched') {
     sortedItems.sort((a, b) => {
       const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
       const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
-      return dateB - dateA; // Newest first
+      return dateB - dateA;
     });
   }
 
@@ -121,6 +147,29 @@ const MyLists = () => {
         <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-secondary)' }}>
           <h3>You don't have any custom lists yet.</h3>
           <p>Add a movie or show to a new custom list to see it here.</p>
+        </div>
+      )}
+
+      {(!loading && items.length > 0 && availableGenres.length > 0) && (
+        <div className="hide-scrollbar" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '10px' }}>
+          <Filter size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
+          <button
+            className={`btn ${selectedGenre === null ? 'btn-primary' : 'btn-glass'}`}
+            style={{ padding: '6px 12px', fontSize: '0.85rem', flexShrink: 0 }}
+            onClick={() => setSelectedGenre(null)}
+          >
+            All
+          </button>
+          {availableGenres.map(g => (
+            <button
+              key={g.id}
+              className={`btn ${selectedGenre === g.id ? 'btn-primary' : 'btn-glass'}`}
+              style={{ padding: '6px 12px', fontSize: '0.85rem', whiteSpace: 'nowrap', flexShrink: 0 }}
+              onClick={() => setSelectedGenre(g.id)}
+            >
+              {g.name}
+            </button>
+          ))}
         </div>
       )}
 

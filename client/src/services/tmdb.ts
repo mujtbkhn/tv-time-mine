@@ -44,3 +44,22 @@ export const fetchDetails = async (mediaType: 'movie' | 'tv' | 'person', id: str
   const data = await response.json();
   return data;
 };
+
+export const fetchGenres = async () => {
+  try {
+    const [movieRes, tvRes] = await Promise.all([
+      fetch(`${BASE_URL}/genre/movie/list`, OPTIONS),
+      fetch(`${BASE_URL}/genre/tv/list`, OPTIONS)
+    ]);
+    const movieData = await movieRes.json();
+    const tvData = await tvRes.json();
+    
+    const genreMap: Record<number, string> = {};
+    movieData.genres?.forEach((g: any) => genreMap[g.id] = g.name);
+    tvData.genres?.forEach((g: any) => genreMap[g.id] = g.name);
+    return genreMap;
+  } catch (err) {
+    console.error("Error fetching genres", err);
+    return {};
+  }
+};

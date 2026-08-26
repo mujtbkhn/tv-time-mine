@@ -192,6 +192,10 @@ button {
   display: none;
 }
 
+.mobile-menu-overlay {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .grid-sidebar, .grid-person {
     grid-template-columns: 1fr !important;
@@ -217,7 +221,7 @@ button {
   .nav-links-desktop {
     display: none !important;
   }
-  
+
   .mobile-menu-btn {
     display: block !important;
     background: none;
@@ -225,6 +229,29 @@ button {
     color: white;
     cursor: pointer;
   }
+
+  .mobile-menu-overlay {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: var(--surface-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border-top: 1px solid var(--glass-border);
+  }
+
+  .mobile-menu-overlay .nav-link {
+    font-size: 1.1rem;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    word-wrap: break-word;
+    white-space: normal;
+  }
+
 
   .nav-actions {
     flex: 1 1 100% !important;
