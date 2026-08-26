@@ -1,10 +1,11 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 
 const router = express.Router();
 
-const generateToken = (id) => {
+const generateToken = (id: string | mongoose.Types.ObjectId) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
     expiresIn: '30d',
   });
@@ -28,7 +29,7 @@ router.post('/register', async (req, res) => {
     } else {
       res.status(400).json({ message: 'Invalid user data' });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 });
@@ -47,18 +48,20 @@ router.post('/login', async (req, res) => {
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 });
 
+import type { Request, Response, NextFunction } from 'express';
+
 // Middleware for protected routes (should ideally be in a separate file, placing here for simplicity in single route file for auth info)
-export const protect = async (req, res, next) => {
+export const protect = async (req: Request, res: Response, next: NextFunction) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as jwt.JwtPayload;
       req.user = await User.findById(decoded.id).select('-password');
       
       if (!req.user) {
@@ -66,7 +69,7 @@ export const protect = async (req, res, next) => {
       }
       
       return next();
-    } catch (error) {
+    } catch (error: any) {
       return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
