@@ -1,10 +1,9 @@
-import React, { useState, useContext } from 'react';
-import { Heart, Plus } from 'lucide-react';
+import React, { useContext } from 'react';
+import { Heart, Plus, Minus } from 'lucide-react';
 import { getImageUrl } from '../services/tmdb';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import api from '../services/api';
-import toast from 'react-hot-toast';
+import { ListContext } from '../context/ListContext';
 
 interface MovieCardProps {
   item: any;
@@ -14,7 +13,7 @@ interface MovieCardProps {
 const MovieCard: React.FC<MovieCardProps> = ({ item, mediaType }) => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const [isLiked, setIsLiked] = useState(false);
+  const { isInList, toggleListItem } = useContext(ListContext);
   
   const type = item.media_type || mediaType || 'movie';
   const title = item.title || item.name;
@@ -23,28 +22,25 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, mediaType }) => {
     navigate(`/detail/${type}/${item.id}`);
   };
 
-  const handleAddToList = async (e: React.MouseEvent, listType: string) => {
+  const handleToggleList = async (e: React.MouseEvent, listType: string) => {
     e.stopPropagation();
     if (!user) {
       navigate('/login');
       return;
     }
-    try {
-      await api.post('/lists/add', {
-        tmdbId: item.id.toString(),
-        mediaType: type,
-        listType,
-        title,
-        posterPath: item.poster_path,
-        releaseDate: item.release_date || item.first_air_date,
-        genreIds: item.genre_ids || []
-      });
-      toast.success(`Added to ${listType.replace('_', ' ')}!`);
-      if (listType === 'favourites') setIsLiked(true);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Error adding to list');
-    }
+    await toggleListItem({
+      tmdbId: item.id.toString(),
+      mediaType: type,
+      listType,
+      title,
+      posterPath: item.poster_path,
+      releaseDate: item.release_date || item.first_air_date,
+      genreIds: item.genre_ids || []
+    }, listType);
   };
+  
+  const isLiked = isInList(item.id.toString(), 'favourites');
+  const isAdded = isInList(item.id.toString(), type === 'movie' ? 'my_movies' : 'my_shows');
 
   return (
     <div 
@@ -100,20 +96,20 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, mediaType }) => {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           <button 
             className="icon-btn glass" 
-            onClick={(e) => handleAddToList(e, 'favourites')}
+            onClick={(e) => handleToggleList(e, 'favourites')}
             style={{ ...iconBtnStyle, color: isLiked ? 'var(--primary-color)' : 'white' }}
-            title="Add to Favourites"
+            title={isLiked ? 'Remove from Favourites' : 'Add to Favourites'}
           >
             <Heart size={18} fill={isLiked ? 'var(--primary-color)' : 'none'} />
           </button>
           
           <button 
             className="icon-btn glass" 
-            onClick={(e) => handleAddToList(e, type === 'movie' ? 'my_movies' : 'my_shows')}
-            style={iconBtnStyle}
-            title={type === 'movie' ? 'Add to Movies' : 'Add to Shows'}
+            onClick={(e) => handleToggleList(e, type === 'movie' ? 'my_movies' : 'my_shows')}
+            style={{ ...iconBtnStyle, background: isAdded ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.5)' }}
+            title={isAdded ? 'Remove from list' : (type === 'movie' ? 'Add to Movies' : 'Add to Shows')}
           >
-            <Plus size={18} />
+            {isAdded ? <Minus size={18} /> : <Plus size={18} />}
           </button>
         </div>
         

@@ -4,6 +4,16 @@ import { protect } from './auth.js';
 
 const router = express.Router();
 
+// Get all items across all lists for the logged-in user
+router.get('/all', protect, async (req, res) => {
+  try {
+    const items = await ListItem.find({ user: req.user._id });
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get all items in a specific list for the logged-in user
 router.get('/:listType', protect, async (req, res) => {
   try {

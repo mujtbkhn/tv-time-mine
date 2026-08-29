@@ -3,7 +3,7 @@ import { fetchTrending, fetchPopular, fetchTopRated, getImageUrl } from '../serv
 import HorizontalScroll from '../components/HorizontalScroll';
 import { Play, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
+import { ShimmerDetail } from '../components/Shimmer';
 const Home = () => {
   const navigate = useNavigate();
   const [heroItem, setHeroItem] = useState<any>(null);
@@ -42,7 +42,7 @@ const Home = () => {
     loadData();
   }, []);
 
-  if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+  if (loading) return <ShimmerDetail />;
 
   return (
     <div>

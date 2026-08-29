@@ -63,3 +63,9 @@ export const fetchGenres = async () => {
     return {};
   }
 };
+
+export const fetchSeasonDetails = async (tvId: string, seasonNumber: number) => {
+  const response = await fetch(`${BASE_URL}/tv/${tvId}/season/${seasonNumber}`, OPTIONS);
+  const data = await response.json();
+  return data;
+};

@@ -2,13 +2,14 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, Plus } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { ListContext } from '../context/ListContext';
 import useDebounce from '../hooks/useDebounce';
 import { searchMedia, getImageUrl } from '../services/tmdb';
-import api from '../services/api';
-import toast from 'react-hot-toast';
+
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
+  const { isInList, toggleListItem } = useContext(ListContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -36,27 +37,22 @@ const Navbar = () => {
     }
   }, [debouncedSearch]);
 
-  const handleAddToList = async (e: React.MouseEvent, item: any, listType: string) => {
+  const handleToggleList = async (e: React.MouseEvent, item: any, listType: string) => {
     e.stopPropagation();
     if (!user) {
       navigate('/login');
       setIsMobileMenuOpen(false);
       return;
     }
-    try {
-      await api.post('/lists/add', {
-        tmdbId: item.id.toString(),
-        mediaType: item.media_type,
-        listType,
-        title: item.title || item.name,
-        posterPath: item.poster_path,
-        releaseDate: item.release_date || item.first_air_date,
-        genreIds: item.genre_ids || []
-      });
-      toast.success(`Added to ${listType.replace('_', ' ')}!`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Error adding to list');
-    }
+    await toggleListItem({
+      tmdbId: item.id.toString(),
+      mediaType: item.media_type,
+      listType,
+      title: item.title || item.name,
+      posterPath: item.poster_path,
+      releaseDate: item.release_date || item.first_air_date,
+      genreIds: item.genre_ids || []
+    }, listType);
   };
 
   const navLinks = (
@@ -68,6 +64,7 @@ const Navbar = () => {
           <Link to="/lists/my_movies" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>My Movies</Link>
           <Link to="/lists/my_shows" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>My Shows</Link>
           <Link to="/lists/favourites" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Favourites</Link>
+          <Link to="/lists/watched" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Watched</Link>
           <Link to="/lists/custom" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Custom Lists</Link>
         </>
       )}
@@ -103,7 +100,9 @@ const Navbar = () => {
             />
             {searchResults.length > 0 && (
               <div className="search-dropdown glass" style={dropdownStyles}>
-                {searchResults.map(item => (
+                {searchResults.map(item => {
+                  const isAdded = isInList(item.id.toString(), item.media_type === 'movie' ? 'my_movies' : 'my_shows');
+                  return (
                   <div key={item.id} className="search-item" onClick={() => {
                     navigate(`/detail/${item.media_type}/${item.id}`);
                     setSearchTerm('');
@@ -118,24 +117,24 @@ const Navbar = () => {
                     </div>
                     {item.media_type === 'movie' && (
                       <button 
-                        onClick={(e) => handleAddToList(e, item, 'my_movies')}
-                        style={{ alignSelf: 'center', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '50%', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        title="Add to Movies"
+                        onClick={(e) => handleToggleList(e, item, 'my_movies')}
+                        style={{ alignSelf: 'center', background: isAdded ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '50%', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title={isAdded ? "Remove from Movies" : "Add to Movies"}
                       >
-                        <Plus size={18} />
+                        {isAdded ? <X size={18} /> : <Plus size={18} />}
                       </button>
                     )}
                     {item.media_type === 'tv' && (
                       <button 
-                        onClick={(e) => handleAddToList(e, item, 'my_shows')}
-                        style={{ alignSelf: 'center', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '50%', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        title="Add to Shows"
+                        onClick={(e) => handleToggleList(e, item, 'my_shows')}
+                        style={{ alignSelf: 'center', background: isAdded ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '50%', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title={isAdded ? "Remove from Shows" : "Add to Shows"}
                       >
-                        <Plus size={18} />
+                        {isAdded ? <X size={18} /> : <Plus size={18} />}
                       </button>
                     )}
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </div>

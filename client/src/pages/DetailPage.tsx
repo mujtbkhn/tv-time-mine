@@ -1,19 +1,24 @@
 import { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchDetails, getImageUrl } from '../services/tmdb';
+import { fetchDetails, getImageUrl, fetchSeasonDetails } from '../services/tmdb';
 import HorizontalScroll from '../components/HorizontalScroll';
 import { AuthContext } from '../context/AuthContext';
-import api from '../services/api';
-import toast from 'react-hot-toast';
-import { Heart, Plus } from 'lucide-react';
+import { ListContext } from '../context/ListContext';
+import { ShimmerDetail } from '../components/Shimmer';
+
+import { Heart, Plus, Minus, Eye } from 'lucide-react';
 
 const DetailPage = () => {
   const { mediaType, id } = useParams<{ mediaType: 'movie' | 'tv' | 'person', id: string }>();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useContext(AuthContext);
+  const { isInList, toggleListItem } = useContext(ListContext);
   const navigate = useNavigate();
-  const [isLiked, setIsLiked] = useState(false);
+  
+  const [selectedSeason, setSelectedSeason] = useState<number>(1);
+  const [seasonDetails, setSeasonDetails] = useState<any>(null);
+  const [loadingSeason, setLoadingSeason] = useState(false);
 
   useEffect(() => {
     const getDetails = async () => {
@@ -33,29 +38,42 @@ const DetailPage = () => {
     getDetails();
   }, [mediaType, id]);
 
-  const handleAddToList = async (listType: string) => {
+  useEffect(() => {
+    const getSeasonDetails = async () => {
+      if (mediaType === 'tv' && id) {
+        try {
+          setLoadingSeason(true);
+          const details = await fetchSeasonDetails(id, selectedSeason);
+          setSeasonDetails(details);
+        } catch (error) {
+          console.error("Failed to fetch season details", error);
+        } finally {
+          setLoadingSeason(false);
+        }
+      }
+    };
+    if (data && mediaType === 'tv') {
+      getSeasonDetails();
+    }
+  }, [selectedSeason, data, id, mediaType]);
+
+  const handleToggleList = async (listType: string) => {
     if (!user) {
       navigate('/login');
       return;
     }
-    try {
-      await api.post('/lists/add', {
-        tmdbId: id,
-        mediaType,
-        listType,
-        title: data.title || data.name,
-        posterPath: data.poster_path,
-        releaseDate: data.release_date || data.first_air_date,
-        genreIds: data.genres ? data.genres.map((g: any) => g.id) : []
-      });
-      toast.success(`Added to ${listType.replace('_', ' ')}!`);
-      if (listType === 'favourites') setIsLiked(true);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Error adding to list');
-    }
+    await toggleListItem({
+      tmdbId: id,
+      mediaType,
+      listType,
+      title: data.title || data.name,
+      posterPath: data.poster_path,
+      releaseDate: data.release_date || data.first_air_date,
+      genreIds: data.genres ? data.genres.map((g: any) => g.id) : []
+    }, listType);
   };
 
-  if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+  if (loading) return <ShimmerDetail />;
   if (!data) return <div>Not found</div>;
 
   if (mediaType === 'person') {
@@ -106,6 +124,14 @@ const DetailPage = () => {
 
   const bgImage = getImageUrl(data.backdrop_path, 'original');
   const posterImage = getImageUrl(data.poster_path, 'w500');
+  
+  const isFavourite = isInList(id || '', 'favourites');
+  const isAdded = isInList(id || '', mediaType === 'movie' ? 'my_movies' : 'my_shows');
+  const isWatched = isInList(id || '', 'watched');
+
+  const averageEpisodeLength = data.episode_run_time?.length > 0 
+    ? Math.round(data.episode_run_time.reduce((a: number, b: number) => a + b, 0) / data.episode_run_time.length) 
+    : data.runtime;
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '50px' }}>
@@ -124,7 +150,7 @@ const DetailPage = () => {
           style={{
             position: 'absolute',
             top: 0, left: 0, right: 0, bottom: 0,
-            background: 'linear-gradient(to top, var(--bg-color) 0%, rgba(15,16,20,0.8) 100%)',
+            // background: 'linear-gradient(to top, var(--bg-color) 0%, rgba(15,16,20,0.8) 100%)',
             backdropFilter: 'blur(4px)'
           }}
         />
@@ -140,10 +166,16 @@ const DetailPage = () => {
             <div style={{ display: 'flex', gap: '15px', color: 'var(--text-secondary)', marginBottom: '20px', flexWrap: 'wrap' }}>
               <span>{data.release_date || data.first_air_date}</span>
               <span>•</span>
-              {data.runtime && <span>{Math.floor(data.runtime / 60)}h {data.runtime % 60}m</span>}
+              {averageEpisodeLength && <span>{Math.floor(averageEpisodeLength / 60)}h {averageEpisodeLength % 60}m {mediaType === 'tv' ? '/ ep' : ''}</span>}
               {data.number_of_seasons && <span>{data.number_of_seasons} Seasons</span>}
               <span>•</span>
-              <span>{data.genres?.map((g: any) => g.name).join(', ')}</span>
+              <span style={{ display: 'flex', gap: '5px' }}>
+                {data.genres?.map((g: any) => (
+                  <span key={g.id} style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>
+                    {g.name}
+                  </span>
+                ))}
+              </span>
               <span>•</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <span style={{ color: 'gold' }}>★</span> {data.vote_average?.toFixed(1)}
@@ -151,32 +183,33 @@ const DetailPage = () => {
             </div>
             
             {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
+            <div style={{ display: 'flex', gap: '15px', marginTop: '20px', flexWrap: 'wrap' }}>
               <button 
                 className="btn btn-glass"
-                onClick={() => handleAddToList('favourites')}
-                style={{ color: isLiked ? 'var(--primary-color)' : 'white' }}
+                onClick={() => handleToggleList('favourites')}
+                style={{ color: isFavourite ? 'var(--primary-color)' : 'white' }}
               >
-                <Heart size={20} fill={isLiked ? 'var(--primary-color)' : 'none'} /> 
-                {isLiked ? 'Favorited' : 'Favorite'}
+                <Heart size={20} fill={isFavourite ? 'var(--primary-color)' : 'none'} /> 
+                {isFavourite ? 'Favorited' : 'Favorite'}
               </button>
               
-              {mediaType === 'movie' && (
-                <button 
-                  className="btn btn-glass"
-                  onClick={() => handleAddToList('my_movies')}
-                >
-                  <Plus size={20} /> Add to Movies
-                </button>
-              )}
-              {mediaType === 'tv' && (
-                <button 
-                  className="btn btn-glass"
-                  onClick={() => handleAddToList('my_shows')}
-                >
-                  <Plus size={20} /> Add to Shows
-                </button>
-              )}
+              <button 
+                className="btn btn-glass"
+                onClick={() => handleToggleList('watched')}
+                style={{ color: isWatched ? '#10b981' : 'white' }}
+              >
+                <Eye size={20} /> 
+                {isWatched ? 'Watched' : 'Mark Watched'}
+              </button>
+              
+              <button 
+                className="btn btn-glass"
+                onClick={() => handleToggleList(mediaType === 'movie' ? 'my_movies' : 'my_shows')}
+                style={{ background: isAdded ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)' }}
+              >
+                {isAdded ? <Minus size={20} /> : <Plus size={20} />} 
+                {isAdded ? 'Remove' : (mediaType === 'movie' ? 'Add to Movies' : 'Add to Shows')}
+              </button>
             </div>
           </div>
         </div>
@@ -226,6 +259,60 @@ const DetailPage = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+            
+            {/* TV Show Seasons & Episodes */}
+            {mediaType === 'tv' && data.seasons && data.seasons.length > 0 && (
+              <div style={{ marginBottom: '40px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+                  <h3 style={{ fontSize: '1.5rem', margin: 0 }}>Episodes</h3>
+                  <select 
+                    className="input-base" 
+                    style={{ width: 'auto', padding: '8px 12px' }}
+                    value={selectedSeason}
+                    onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                  >
+                    {data.seasons.filter((s:any) => s.season_number > 0).map((season: any) => (
+                      <option key={season.id} value={season.season_number}>
+                        {season.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {loadingSeason ? (
+                  <div>Loading episodes...</div>
+                ) : seasonDetails && seasonDetails.episodes ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    {seasonDetails.episodes.map((ep: any) => (
+                      <div key={ep.id} className="glass" style={{ display: 'flex', gap: '15px', padding: '15px', borderRadius: 'var(--radius-md)' }}>
+                        <img 
+                          src={getImageUrl(ep.still_path, 'w300')} 
+                          alt={ep.name}
+                          style={{ width: '160px', height: '90px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
+                          onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/160x90?text=No+Image'}
+                        />
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <h4 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>{ep.episode_number}. {ep.name}</h4>
+                            <span style={{ color: 'gold', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              ★ {ep.vote_average?.toFixed(1)}
+                            </span>
+                          </div>
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '8px' }}>
+                            {ep.air_date} {ep.runtime ? `• ${ep.runtime}m` : ''}
+                          </div>
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {ep.overview || 'No overview available.'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div>No episodes found.</div>
+                )}
               </div>
             )}
           </div>
