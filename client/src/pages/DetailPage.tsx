@@ -162,9 +162,30 @@ const DetailPage = () => {
             className="hero-poster"
           />
           <div style={{ paddingBottom: '20px' }}>
-            <h1 className="hero-title">{data.title || data.name}</h1>
-            <div style={{ display: 'flex', gap: '15px', color: 'var(--text-secondary)', marginBottom: '20px', flexWrap: 'wrap' }}>
-              <span>{data.release_date || data.first_air_date}</span>
+            <h1 className="hero-title" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+              {data.title || data.name}
+              {mediaType === 'tv' && data.status && (
+                <span style={{ 
+                  background: data.status === 'Ended' || data.status === 'Canceled' ? 'rgba(255,0,0,0.2)' : 'rgba(16, 185, 129, 0.2)', 
+                  color: data.status === 'Ended' || data.status === 'Canceled' ? '#ff4d4d' : '#10b981',
+                  padding: '4px 10px', 
+                  borderRadius: 'var(--radius-sm)', 
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px'
+                }}>
+                  {data.status === 'Returning Series' ? 'Airing' : data.status}
+                </span>
+              )}
+            </h1>
+            <div style={{ display: 'flex', gap: '15px', color: 'var(--text-secondary)', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, color: 'white' }}>
+                {mediaType === 'movie' 
+                  ? (data.release_date?.split('-')[0] || '') 
+                  : `${data.first_air_date?.split('-')[0] || ''}–${(data.status === 'Ended' || data.status === 'Canceled') ? (data.last_air_date?.split('-')[0] || '') : ''}`
+                }
+              </span>
               <span>•</span>
               {averageEpisodeLength && <span>{Math.floor(averageEpisodeLength / 60)}h {averageEpisodeLength % 60}m {mediaType === 'tv' ? '/ ep' : ''}</span>}
               {data.number_of_seasons && <span>{data.number_of_seasons} Seasons</span>}
