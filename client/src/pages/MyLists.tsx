@@ -239,6 +239,7 @@ const MyLists = () => {
                         <button
                           className="icon-btn glass"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
                             setActiveDropdown(activeDropdown === item._id ? null : item._id);
                           }}
