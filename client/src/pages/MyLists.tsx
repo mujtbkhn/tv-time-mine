@@ -16,7 +16,7 @@ const MyLists = () => {
   const [customLists, setCustomLists] = useState<string[]>([]);
   const [activeCustomList, setActiveCustomList] = useState<string>('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  
+
   const [genreMap, setGenreMap] = useState<Record<number, string>>({});
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
 
@@ -57,7 +57,7 @@ const MyLists = () => {
         if (listType !== 'custom') setLoading(false);
       }
     };
-    
+
     fetchLists();
   }, [listType, user, navigate]);
 
@@ -115,7 +115,7 @@ const MyLists = () => {
   if (loading && items.length === 0) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
 
   const filteredItems = selectedGenre && Array.isArray(items)
-    ? items.filter(item => item.genreIds && Array.isArray(item.genreIds) && item.genreIds.includes(selectedGenre)) 
+    ? items.filter(item => item.genreIds && Array.isArray(item.genreIds) && item.genreIds.includes(selectedGenre))
     : (Array.isArray(items) ? items : []);
 
   const sortedItems = [...filteredItems];
@@ -138,7 +138,7 @@ const MyLists = () => {
       {listType === 'custom' && customLists.length > 0 && (
         <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', overflowX: 'auto', paddingBottom: '10px' }}>
           {customLists.map(name => (
-            <button 
+            <button
               key={name}
               className={`btn ${activeCustomList === name ? 'btn-primary' : 'btn-glass'}`}
               onClick={() => setActiveCustomList(name)}
@@ -189,9 +189,17 @@ const MyLists = () => {
           ) : (
             <div className="grid-cards" style={{ paddingBottom: '50px' }}>
               {sortedItems.map(item => (
-                <div 
-                  key={item._id} 
+                <a
+                  key={item._id}
                   className="movie-card"
+                  href={`/detail/${item.mediaType}/${item.tmdbId}`}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) {
+                      return;
+                    }
+                    e.preventDefault();
+                    navigate(`/detail/${item.mediaType}/${item.tmdbId}`);
+                  }}
                   style={{
                     position: 'relative',
                     width: '100%',
@@ -200,20 +208,22 @@ const MyLists = () => {
                     overflow: 'hidden',
                     cursor: 'pointer',
                     boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                    transition: 'transform 0.3s ease'
+                    transition: 'transform 0.3s ease',
+                    display: 'block',
+                    textDecoration: 'none',
+                    color: 'inherit'
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                  onClick={() => window.open(`/detail/${item.mediaType}/${item.tmdbId}`, '_blank')}
                 >
-                  <img 
-                    src={getImageUrl(item.posterPath, 'w342')} 
-                    alt={item.title} 
+                  <img
+                    src={getImageUrl(item.posterPath, 'w342')}
+                    alt={item.title}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x300?text=No+Image'}
                   />
-                  
-                  <div 
+
+                  <div
                     style={{
                       position: 'absolute',
                       top: 0, left: 0, right: 0, bottom: 0,
@@ -226,8 +236,8 @@ const MyLists = () => {
                   >
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                       <div style={{ position: 'relative' }}>
-                        <button 
-                          className="icon-btn glass" 
+                        <button
+                          className="icon-btn glass"
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveDropdown(activeDropdown === item._id ? null : item._id);
@@ -238,7 +248,7 @@ const MyLists = () => {
                           <ListPlus size={16} />
                         </button>
                         {activeDropdown === item._id && (
-                          <div 
+                          <div
                             style={{
                               position: 'absolute',
                               top: '100%',
@@ -299,44 +309,44 @@ const MyLists = () => {
                               );
                             })}
                             <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  const name = window.prompt('Enter new custom list name:');
-                                  if (name && name.trim()) {
-                                    await toggleListItem({
-                                      tmdbId: item.tmdbId,
-                                      mediaType: item.mediaType,
-                                      title: item.title,
-                                      posterPath: item.posterPath,
-                                      releaseDate: item.releaseDate,
-                                      genreIds: item.genreIds,
-                                      listType: name.trim()
-                                    }, name.trim());
-                                  }
-                                  setActiveDropdown(null);
-                                }}
-                                style={{
-                                  background: 'rgba(255,255,255,0.1)',
-                                  border: 'none',
-                                  color: 'white',
-                                  textAlign: 'center',
-                                  padding: '8px 10px',
-                                  cursor: 'pointer',
-                                  borderRadius: '4px',
-                                  fontSize: '0.85rem',
-                                  marginTop: '4px',
-                                  fontWeight: 500
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                              >
-                                + Create New List
-                              </button>
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const name = window.prompt('Enter new custom list name:');
+                                if (name && name.trim()) {
+                                  await toggleListItem({
+                                    tmdbId: item.tmdbId,
+                                    mediaType: item.mediaType,
+                                    title: item.title,
+                                    posterPath: item.posterPath,
+                                    releaseDate: item.releaseDate,
+                                    genreIds: item.genreIds,
+                                    listType: name.trim()
+                                  }, name.trim());
+                                }
+                                setActiveDropdown(null);
+                              }}
+                              style={{
+                                background: 'rgba(255,255,255,0.1)',
+                                border: 'none',
+                                color: 'white',
+                                textAlign: 'center',
+                                padding: '8px 10px',
+                                cursor: 'pointer',
+                                borderRadius: '4px',
+                                fontSize: '0.85rem',
+                                marginTop: '4px',
+                                fontWeight: 500
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                            >
+                              + Create New List
+                            </button>
                           </div>
                         )}
                       </div>
 
-                      <button 
+                      <button
                         className="icon-btn glass"
                         style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(229,9,20,0.8)', color: 'white', border: 'none', cursor: 'pointer' }}
                         onClick={(e) => handleRemove(item._id, e)}
@@ -353,7 +363,7 @@ const MyLists = () => {
                       </span>
                     </div>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           )}
