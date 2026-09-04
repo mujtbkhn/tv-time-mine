@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { Heart, Plus, Minus } from 'lucide-react';
+import React, { useContext, useState } from 'react';
+import { Heart, Plus, Minus, ListPlus } from 'lucide-react';
 import { getImageUrl } from '../services/tmdb';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -13,13 +13,14 @@ interface MovieCardProps {
 const MovieCard: React.FC<MovieCardProps> = ({ item, mediaType }) => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const { isInList, toggleListItem } = useContext(ListContext);
+  const { isInList, toggleListItem, customListNames } = useContext(ListContext);
+  const [showDropdown, setShowDropdown] = useState(false);
   
   const type = item.media_type || mediaType || 'movie';
   const title = item.title || item.name;
   
   const handleCardClick = () => {
-    navigate(`/detail/${type}/${item.id}`);
+    window.open(`/detail/${type}/${item.id}`, '_blank');
   };
 
   const handleToggleList = async (e: React.MouseEvent, listType: string) => {
@@ -111,6 +112,100 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, mediaType }) => {
           >
             {isAdded ? <Minus size={18} /> : <Plus size={18} />}
           </button>
+
+          <div style={{ position: 'relative' }}>
+            <button 
+              className="icon-btn glass" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDropdown(!showDropdown);
+              }}
+              style={{ ...iconBtnStyle, background: showDropdown ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.5)' }}
+              title="Add to Custom List"
+            >
+              <ListPlus size={18} />
+            </button>
+            {showDropdown && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '8px',
+                  background: 'rgba(20,20,20,0.95)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                  zIndex: 20,
+                  minWidth: '150px',
+                  backdropFilter: 'blur(10px)',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {customListNames.map(name => {
+                  const inList = isInList(item.id.toString(), name);
+                  return (
+                    <button
+                      key={name}
+                      onClick={(e) => {
+                        handleToggleList(e, name);
+                        setShowDropdown(false);
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: inList ? 'var(--primary-color)' : 'white',
+                        textAlign: 'left',
+                        padding: '6px 10px',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        fontSize: '0.85rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontWeight: inList ? 600 : 400
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {name}
+                      {inList && <span>✓</span>}
+                    </button>
+                  );
+                })}
+                <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const name = window.prompt('Enter new custom list name:');
+                      if (name && name.trim()) {
+                        handleToggleList(e, name.trim());
+                      }
+                      setShowDropdown(false);
+                    }}
+                    style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      border: 'none',
+                      color: 'white',
+                      textAlign: 'center',
+                      padding: '8px 10px',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '0.85rem',
+                      marginTop: '4px',
+                      fontWeight: 500
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  >
+                    + Create New List
+                  </button>
+              </div>
+            )}
+          </div>
         </div>
         
         <div>

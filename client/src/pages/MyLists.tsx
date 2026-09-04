@@ -3,16 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { getImageUrl, fetchGenres } from '../services/tmdb';
-import { Trash2, Filter } from 'lucide-react';
+import { Trash2, Filter, ListPlus } from 'lucide-react';
+import { ListContext } from '../context/ListContext';
 
 const MyLists = () => {
   const { listType } = useParams<{ listType: string }>();
   const { user } = useContext(AuthContext);
+  const { customListNames, isInList, toggleListItem } = useContext(ListContext);
   const navigate = useNavigate();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [customLists, setCustomLists] = useState<string[]>([]);
   const [activeCustomList, setActiveCustomList] = useState<string>('');
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   
   const [genreMap, setGenreMap] = useState<Record<number, string>>({});
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
@@ -201,7 +204,7 @@ const MyLists = () => {
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                  onClick={() => navigate(`/detail/${item.mediaType}/${item.tmdbId}`)}
+                  onClick={() => window.open(`/detail/${item.mediaType}/${item.tmdbId}`, '_blank')}
                 >
                   <img 
                     src={getImageUrl(item.posterPath, 'w342')} 
@@ -221,7 +224,118 @@ const MyLists = () => {
                       padding: '15px'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                      <div style={{ position: 'relative' }}>
+                        <button 
+                          className="icon-btn glass" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdown(activeDropdown === item._id ? null : item._id);
+                          }}
+                          style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: activeDropdown === item._id ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.5)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
+                          title="Add to Custom List"
+                        >
+                          <ListPlus size={16} />
+                        </button>
+                        {activeDropdown === item._id && (
+                          <div 
+                            style={{
+                              position: 'absolute',
+                              top: '100%',
+                              right: 0,
+                              marginTop: '8px',
+                              background: 'rgba(20,20,20,0.95)',
+                              border: '1px solid rgba(255,255,255,0.1)',
+                              borderRadius: 'var(--radius-md)',
+                              padding: '8px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px',
+                              zIndex: 20,
+                              minWidth: '150px',
+                              backdropFilter: 'blur(10px)',
+                              boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {customListNames.map(name => {
+                              const inList = isInList(item.tmdbId, name);
+                              return (
+                                <button
+                                  key={name}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    await toggleListItem({
+                                      tmdbId: item.tmdbId,
+                                      mediaType: item.mediaType,
+                                      title: item.title,
+                                      posterPath: item.posterPath,
+                                      releaseDate: item.releaseDate,
+                                      genreIds: item.genreIds,
+                                      listType: name
+                                    }, name);
+                                    setActiveDropdown(null);
+                                  }}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: inList ? 'var(--primary-color)' : 'white',
+                                    textAlign: 'left',
+                                    padding: '6px 10px',
+                                    cursor: 'pointer',
+                                    borderRadius: '4px',
+                                    fontSize: '0.85rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    fontWeight: inList ? 600 : 400
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  {name}
+                                  {inList && <span>✓</span>}
+                                </button>
+                              );
+                            })}
+                            <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const name = window.prompt('Enter new custom list name:');
+                                  if (name && name.trim()) {
+                                    await toggleListItem({
+                                      tmdbId: item.tmdbId,
+                                      mediaType: item.mediaType,
+                                      title: item.title,
+                                      posterPath: item.posterPath,
+                                      releaseDate: item.releaseDate,
+                                      genreIds: item.genreIds,
+                                      listType: name.trim()
+                                    }, name.trim());
+                                  }
+                                  setActiveDropdown(null);
+                                }}
+                                style={{
+                                  background: 'rgba(255,255,255,0.1)',
+                                  border: 'none',
+                                  color: 'white',
+                                  textAlign: 'center',
+                                  padding: '8px 10px',
+                                  cursor: 'pointer',
+                                  borderRadius: '4px',
+                                  fontSize: '0.85rem',
+                                  marginTop: '4px',
+                                  fontWeight: 500
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                              >
+                                + Create New List
+                              </button>
+                          </div>
+                        )}
+                      </div>
+
                       <button 
                         className="icon-btn glass"
                         style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(229,9,20,0.8)', color: 'white', border: 'none', cursor: 'pointer' }}

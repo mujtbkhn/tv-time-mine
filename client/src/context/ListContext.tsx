@@ -16,6 +16,7 @@ export interface ListItem {
 
 interface ListContextType {
   items: ListItem[];
+  customListNames: string[];
   loading: boolean;
   isInList: (tmdbId: string, listType: string) => boolean;
   toggleListItem: (itemDetails: any, listType: string) => Promise<void>;
@@ -24,6 +25,7 @@ interface ListContextType {
 
 export const ListContext = createContext<ListContextType>({
   items: [],
+  customListNames: [],
   loading: true,
   isInList: () => false,
   toggleListItem: async () => {},
@@ -96,8 +98,11 @@ export const ListProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const standardLists = ['my_movies', 'my_shows', 'favourites', 'watched'];
+  const customListNames = Array.from(new Set(items.map(item => item.listType).filter(type => !standardLists.includes(type))));
+
   return (
-    <ListContext.Provider value={{ items, loading, isInList, toggleListItem, refreshLists: fetchAllLists }}>
+    <ListContext.Provider value={{ items, customListNames, loading, isInList, toggleListItem, refreshLists: fetchAllLists }}>
       {children}
     </ListContext.Provider>
   );

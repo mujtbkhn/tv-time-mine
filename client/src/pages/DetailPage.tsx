@@ -6,16 +6,17 @@ import { AuthContext } from '../context/AuthContext';
 import { ListContext } from '../context/ListContext';
 import { ShimmerDetail } from '../components/Shimmer';
 
-import { Heart, Plus, Minus, Eye } from 'lucide-react';
+import { Heart, Plus, Minus, Eye, ListPlus } from 'lucide-react';
 
 const DetailPage = () => {
   const { mediaType, id } = useParams<{ mediaType: 'movie' | 'tv' | 'person', id: string }>();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useContext(AuthContext);
-  const { isInList, toggleListItem } = useContext(ListContext);
+  const { isInList, toggleListItem, customListNames } = useContext(ListContext);
   const navigate = useNavigate();
   
+  const [showDropdown, setShowDropdown] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
   const [seasonDetails, setSeasonDetails] = useState<any>(null);
   const [loadingSeason, setLoadingSeason] = useState(false);
@@ -231,6 +232,95 @@ const DetailPage = () => {
                 {isAdded ? <Minus size={20} /> : <Plus size={20} />} 
                 {isAdded ? 'Remove' : (mediaType === 'movie' ? 'Add to Movies' : 'Add to Shows')}
               </button>
+
+              <div style={{ position: 'relative' }}>
+                <button 
+                  className="btn btn-glass"
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  style={{ background: showDropdown ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)' }}
+                >
+                  <ListPlus size={20} /> 
+                  Custom List
+                </button>
+                {showDropdown && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      marginTop: '8px',
+                      background: 'rgba(20,20,20,0.95)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      zIndex: 20,
+                      minWidth: '200px',
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+                    }}
+                  >
+                    {customListNames.map(name => {
+                      const inList = isInList(id || '', name);
+                      return (
+                        <button
+                          key={name}
+                          onClick={() => {
+                            handleToggleList(name);
+                            setShowDropdown(false);
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: inList ? 'var(--primary-color)' : 'white',
+                            textAlign: 'left',
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            fontSize: '0.9rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            fontWeight: inList ? 600 : 400
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        >
+                          {name}
+                          {inList && <span>✓</span>}
+                        </button>
+                      );
+                    })}
+                    <button
+                        onClick={() => {
+                          const name = window.prompt('Enter new custom list name:');
+                          if (name && name.trim()) {
+                            handleToggleList(name.trim());
+                          }
+                          setShowDropdown(false);
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.1)',
+                          border: 'none',
+                          color: 'white',
+                          textAlign: 'center',
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                          borderRadius: '4px',
+                          fontSize: '0.9rem',
+                          marginTop: '4px',
+                          fontWeight: 500
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                      >
+                        + Create New List
+                      </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
