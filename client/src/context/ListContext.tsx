@@ -12,6 +12,7 @@ export interface ListItem {
   posterPath?: string;
   releaseDate?: string;
   genreIds?: number[];
+  runtime?: number;
 }
 
 interface ListContextType {

@@ -38,7 +38,7 @@ router.get('/custom/names', protect, async (req, res) => {
 
 // Add an item to a list
 router.post('/add', protect, async (req, res) => {
-  const { tmdbId, mediaType, listType, title, posterPath, releaseDate, genreIds } = req.body;
+  const { tmdbId, mediaType, listType, title, posterPath, releaseDate, genreIds, runtime } = req.body;
   
   if (!tmdbId || !mediaType || !listType || !title) {
     return res.status(400).json({ message: 'Please provide all required fields' });
@@ -58,7 +58,8 @@ router.post('/add', protect, async (req, res) => {
       title,
       posterPath,
       releaseDate,
-      genreIds
+      genreIds,
+      runtime
     });
     res.status(201).json(newItem);
   } catch (error) {

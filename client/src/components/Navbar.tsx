@@ -30,7 +30,7 @@ const Navbar = () => {
   useEffect(() => {
     if (debouncedSearch) {
       searchMedia(debouncedSearch).then(results => {
-        setSearchResults(results.slice(0, 5));
+        setSearchResults(results);
       });
     } else {
       setSearchResults([]);
@@ -93,7 +93,7 @@ const Navbar = () => {
             <input 
               type="text" 
               className="input-base search-input" 
-              placeholder="Search..." 
+              placeholder="Search... or 'Title *2005'" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: '40px', width: '250px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)' }}
@@ -113,6 +113,8 @@ const Navbar = () => {
                       <h4 style={{ fontSize: '0.9rem', margin: 0 }}>{item.title || item.name}</h4>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                         {item.media_type === 'movie' ? 'Movie' : item.media_type === 'tv' ? 'TV Show' : 'Person'}
+                        {(item.release_date || item.first_air_date) && ` · ${(item.release_date || item.first_air_date).split('-')[0]}`}
+                        {item.vote_average > 0 && ` · ★ ${item.vote_average.toFixed(1)}`}
                       </span>
                     </div>
                     {item.media_type === 'movie' && (
@@ -179,7 +181,8 @@ const dropdownStyles: React.CSSProperties = {
   width: '100%',
   background: 'var(--surface-color)',
   borderRadius: 'var(--radius-md)',
-  overflow: 'hidden',
+  overflow: 'auto',
+  maxHeight: '300px',
   boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
 };
 

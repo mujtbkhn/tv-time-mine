@@ -34,13 +34,46 @@ export const fetchDiscover = async (mediaType: 'movie' | 'tv', page: number = 1)
 
 export const searchMedia = async (query: string) => {
   if (!query) return [];
-  const response = await fetch(`${BASE_URL}/search/multi?query=${encodeURIComponent(query)}`, OPTIONS);
+
+  // Detect optional year suffix: "Movie Title *2005"
+  const yearMatch = query.match(/\*(\d{4})\s*$/);
+  const year = yearMatch ? yearMatch[1] : null;
+  const cleanQuery = yearMatch ? query.replace(/\*\d{4}\s*$/, '').trim() : query.trim();
+
+  if (year) {
+    // Year was provided — run parallel movie + TV searches with year filter
+    const [movieRes, tvRes] = await Promise.all([
+      fetch(
+        `${BASE_URL}/search/movie?query=${encodeURIComponent(cleanQuery)}&primary_release_year=${year}`,
+        OPTIONS
+      ),
+      fetch(
+        `${BASE_URL}/search/tv?query=${encodeURIComponent(cleanQuery)}&first_air_date_year=${year}`,
+        OPTIONS
+      ),
+    ]);
+    const movieData = await movieRes.json();
+    const tvData = await tvRes.json();
+
+    const movies = (movieData.results || []).map((m: any) => ({ ...m, media_type: 'movie' }));
+    const shows = (tvData.results || []).map((t: any) => ({ ...t, media_type: 'tv' }));
+
+    // Merge and sort by popularity descending
+    return [...movies, ...shows].sort((a: any, b: any) => (b.popularity ?? 0) - (a.popularity ?? 0));
+  }
+
+  // No year — use standard multi-search
+  const response = await fetch(`${BASE_URL}/search/multi?query=${encodeURIComponent(cleanQuery)}`, OPTIONS);
   const data = await response.json();
   return data.results;
 };
 
 export const fetchDetails = async (mediaType: 'movie' | 'tv' | 'person', id: string) => {
-  const response = await fetch(`${BASE_URL}/${mediaType}/${id}?append_to_response=credits,images,similar`, OPTIONS);
+  // For persons, also fetch combined_credits (full filmography with vote_average)
+  const appendFields = mediaType === 'person'
+    ? 'credits,images,similar,combined_credits'
+    : 'credits,images,similar';
+  const response = await fetch(`${BASE_URL}/${mediaType}/${id}?append_to_response=${appendFields}`, OPTIONS);
   const data = await response.json();
   return data;
 };

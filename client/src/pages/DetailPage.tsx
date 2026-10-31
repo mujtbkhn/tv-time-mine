@@ -63,6 +63,12 @@ const DetailPage = () => {
       navigate('/login');
       return;
     }
+    // For movies: data.runtime (minutes). For TV: average episode_run_time
+    const runtime = mediaType === 'movie'
+      ? (data.runtime || undefined)
+      : (data.episode_run_time?.length > 0
+          ? Math.round(data.episode_run_time.reduce((a: number, b: number) => a + b, 0) / data.episode_run_time.length)
+          : undefined);
     await toggleListItem({
       tmdbId: id,
       mediaType,
@@ -70,7 +76,8 @@ const DetailPage = () => {
       title: data.title || data.name,
       posterPath: data.poster_path,
       releaseDate: data.release_date || data.first_air_date,
-      genreIds: data.genres ? data.genres.map((g: any) => g.id) : []
+      genreIds: data.genres ? data.genres.map((g: any) => g.id) : [],
+      runtime
     }, listType);
   };
 
@@ -79,6 +86,22 @@ const DetailPage = () => {
 
   if (mediaType === 'person') {
     const profileImage = getImageUrl(data.profile_path, 'h632');
+
+    // Build filmography from combined_credits: deduplicate by id+media_type, sort by vote_average desc
+    const allCredits: any[] = [
+      ...(data.combined_credits?.cast || []),
+      ...(data.combined_credits?.crew || []),
+    ];
+    const seenIds = new Set<string>();
+    const filmography = allCredits
+      .filter(item => {
+        const key = `${item.id}-${item.media_type}`;
+        if (seenIds.has(key)) return false;
+        seenIds.add(key);
+        return item.poster_path && (item.vote_count ?? 0) >= 10;
+      })
+      .sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
+
     return (
       <div className="container" style={{ paddingTop: '100px', minHeight: '100vh', paddingBottom: '50px' }}>
         <div className="grid-person">
@@ -117,6 +140,88 @@ const DetailPage = () => {
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: '40px', whiteSpace: 'pre-wrap' }}>
               {data.biography || "We don't have a biography for this person."}
             </p>
+
+            {/* Filmography sorted by rating */}
+            {filmography.length > 0 && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                  <h3 style={{ fontSize: '1.5rem', margin: 0 }}>Filmography</h3>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.08)', padding: '3px 10px', borderRadius: '20px' }}>
+                    {filmography.length} titles · sorted by rating
+                  </span>
+                </div>
+                <div className="grid-cards" style={{ gap: '20px' }}>
+                  {filmography.map(item => {
+                    const title = item.title || item.name || 'Untitled';
+                    const year = (item.release_date || item.first_air_date || '').split('-')[0];
+                    const isMovie = item.media_type === 'movie';
+                    return (
+                      <div
+                        key={`${item.id}-${item.media_type}`}
+                        onClick={() => navigate(`/detail/${item.media_type}/${item.id}`)}
+                        style={{
+                          position: 'relative',
+                          width: '100%',
+                          aspectRatio: '2/3',
+                          borderRadius: 'var(--radius-md)',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                          transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLElement).style.transform = 'scale(1.05)';
+                          (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
+                          (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+                        }}
+                      >
+                        <img
+                          src={getImageUrl(item.poster_path, 'w342')}
+                          alt={title}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={e => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x300?text=No+Image'}
+                        />
+                        {/* Rating badge */}
+                        {item.vote_average > 0 && (
+                          <div style={{
+                            position: 'absolute', top: '8px', right: '8px',
+                            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+                            border: '1px solid rgba(255,215,0,0.3)',
+                            borderRadius: '6px', padding: '3px 7px',
+                            fontSize: '0.72rem', fontWeight: 700,
+                            color: 'gold', display: 'flex', alignItems: 'center', gap: '3px',
+                          }}>
+                            ★ {item.vote_average.toFixed(1)}
+                          </div>
+                        )}
+                        {/* Media type badge */}
+                        <div style={{
+                          position: 'absolute', top: '8px', left: '8px',
+                          background: isMovie ? 'rgba(229,9,20,0.85)' : 'rgba(16,185,129,0.85)',
+                          borderRadius: '4px', padding: '2px 7px',
+                          fontSize: '0.65rem', fontWeight: 700, color: 'white',
+                          letterSpacing: '0.5px', textTransform: 'uppercase',
+                        }}>
+                          {isMovie ? 'Movie' : 'TV'}
+                        </div>
+                        {/* Gradient overlay */}
+                        <div style={{
+                          position: 'absolute', bottom: 0, left: 0, right: 0,
+                          background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0) 55%)',
+                          padding: '12px 10px 10px',
+                        }}>
+                          <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, textShadow: '0 1px 3px rgba(0,0,0,0.8)', lineHeight: 1.3 }}>{title}</h4>
+                          {year && <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{year}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
